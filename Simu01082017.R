@@ -2,13 +2,7 @@
 
 library('pdist')
 pdist.pdist <- pdist::pdist
-
-library(scales)
-library(sp)
-library(spatstat)
 library('polyclip','colorspace')
-library(pracma)
-library(arules)
 library(biwavelet)
 library(geoR)
 
@@ -243,13 +237,13 @@ Sigma=  1
 Sd.Sigma.1 = 1
 Sd.Sigma.2 = 1 
 Amount.Scale = 0.05
-Amount.Translate = seq(from=0,to=0.1,by=0.05) #0.5 # seq(from=0,to=1,by=0.05) # c(0,0.05,0.1,0.25,0.5,0.75,0.85,0.9,1)
+Amount.Translate = seq(from=0,to=1,by=0.05) # that is omega
 Nstep <- 100 
-NSim <- 10 # 1000
+NSim <- 1000
 delta <- 5
 Dmax <- 20*1.852 # 20 knots for data in meters (vmax*delta.t)
 delta.DI <- 1
-# parameters for RP / WC
+# parameters for WC
 sl=2
 su=6
 epsilon=0.5
