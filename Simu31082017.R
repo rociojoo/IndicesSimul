@@ -99,8 +99,7 @@ Cs.function <- function(A,B,distances){
   distances.de <- as.matrix(pdist.pdist(X = A,Y = B))
   de <- mean(distances.de)
   Cs <- (de-do)/(de+do)
-  p <- binom.test(x=sum(distances<=de),n=length(distances),p=0.5,alternative="greater")$p.value
-  Cs.2 <- (1-p)/(1-(0.5)^nrow(A))
+  Cs.2 <- (1-binom.test(x=sum(distances<=de),n=length(distances),p=0.5,alternative="greater")$p.value) 
   return(list(Cs=Cs,Cs.2=Cs.2))
 }
 
