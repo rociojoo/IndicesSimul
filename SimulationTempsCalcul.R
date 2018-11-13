@@ -200,36 +200,173 @@ DI.function <- function(A,B,delta.DI){ # adapted from the wildlifeDI package wit
 
 
 
-# An example for indices derivation:
+# Measuring CPU time: # compare with Simul06092017.R
+
+
+#### for CPU time
+
+Cs.function.CPU <- function(A,B,distances){
+  start.time <- Sys.time()
+  do <- mean(distances)
+  distances.de <- as.matrix(pdist.pdist(X = A,Y = B))
+  de <- mean(distances.de)
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  prior.time <- as.numeric(time.taken)
+  start.time <- Sys.time()
+  Cs <- (de-do)/(de+do)
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  Cs.time <- as.numeric(time.taken) + prior.time
+  return(list(Cs=Cs,Cs.time=Cs.time))
+}
+
+DI.function.CPU <- function(A,B,delta.DI,longueur,distance1,distance2){
+  
+  start.time <- Sys.time()
+  DId0 <- 1 - (abs(distance1-distance2)/(distance1+distance2))^delta.DI
+  DId0[which(distance1+distance2 == 0)] <- 1
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  DId.time1 <- as.numeric(time.taken) 
+  
+  start.time <- Sys.time()
+  DI0.d <- mean(DId0,na.rm=TRUE)
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  DId.time <- as.numeric(time.taken) + DId.time1
+  
+  
+  # DItheta
+  start.time <- Sys.time()
+  x1 <- A[-1, ]
+  x2 <- A[-longueur, ]
+  dx <- c(x1[,1] - x2[,1])
+  dy <- c(x1[,2] - x2[,2])
+  abs.angle.A <- atan2(dy, dx)
+  x1 <- B[-1, ]
+  x2 <- B[-longueur, ]
+  dx <- c(x1[,1] - x2[,1])
+  dy <- c(x1[,2] - x2[,2])
+  abs.angle.B <- atan2(dy, dx)
+  DItheta <- cos(abs.angle.A - abs.angle.B)
+  DItheta[which(is.na(abs.angle.A)== TRUE & is.na(abs.angle.B) == TRUE)] <- 1
+  DItheta[which(is.na(DItheta))] <- 0
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  DItheta.time1 <- as.numeric(time.taken) 
+  
+  start.time <- Sys.time()
+  DI.theta <- mean(DItheta,na.rm=TRUE)
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  DItheta.time <- as.numeric(time.taken) + DItheta.time1
+  
+  
+  # DI
+  start.time <- Sys.time()
+  DI0 <- mean(DItheta*DId0,na.rm = TRUE)
+  end.time <- Sys.time()
+  time.taken <- difftime(end.time, start.time,units = "secs")
+  DI.time <- as.numeric(time.taken) + DItheta.time1 + DId.time1
+  
+  return(list(DI=DI0,DI.d=DI0.d,DI.theta=DI.theta,DId.time=DId.time,DItheta.time=DItheta.time,DI.time=DI.time))
+}
+
+
+
+
+NSim <- 1000
+
 # first, simulating a dyad:
 Nstep <- 100
+Dmax <- 10
+delta.DI <- 1
+
+Cs1.time <- rep(NA, NSim)
+jPPA.time <- rep(NA, NSim)
+rlon.time <- rlat.time <- rtot.time <- rspeed.time <- rep(NA, NSim)
+CSEM.time <- rep(NA, NSim)
+prox1.time <- rep(NA, NSim)
+DI.time <- DId.time <- DItheta.time <- rep(NA, NSim)
+
+for (i in 1:NSim){
+set.seed(i)
+
 A  <- cbind(cumsum(rnorm(Nstep, mean=0, sd=1)),cumsum(rnorm(Nstep, mean=0, sd=1)))
 probas <- rbinom(n=Nstep,size=100,prob = 0.5)/100
 B  <- probas*jitter(A,amount = 0.05) + (1-probas)*cbind(cumsum((rnorm(Nstep, mean=0, sd=1))),
                                                         cumsum(rnorm(Nstep, mean=0, sd=1)))
 
-Dmax <- 10
-delta.DI <- 1
+start.time <- Sys.time()
 distances <- diag(as.matrix(pdist.pdist(X = A,Y = B)))
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+distances.time <- as.numeric(time.taken)
+
+start.time <- Sys.time()
 longueur <- length(A[,1])
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+longueur.time <- as.numeric(time.taken)
+
+start.time <- Sys.time()
 distance1 <- sqrt((diff(A[,1]))^2 + (diff(A[,2]))^2)
 distance2 <- sqrt((diff(B[,1]))^2 + (diff(B[,2]))^2)
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+cons.dist.time <- as.numeric(time.taken)
+
+start.time <- Sys.time()
 Prox1 <- sum(as.numeric(distances < 1))/longueur
-Prox2 <- sum(as.numeric(distances < 3))/longueur
-Prox3 <- sum(as.numeric(distances < 5))/longueur
-Cs.res <- Cs.function(A=A,B=B,distances=distances) # I used to compute another statistic (Cs2) in the same function
-Cs1 <- Cs.res$Cs
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+prox1.time[i6] <- as.numeric(time.taken) + distances.time +  longueur.time
+
+Cs.res <- Cs.function.CPU(A=A,B=B,distances=distances)
+Cs1.time[i6] <- Cs.res$Cs.time + distances.time
+
+start.time <- Sys.time()
 jPPA.index <- jPPA(A = A,B=B,Dmax=Dmax)
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+jPPA.time[i6] <- as.numeric(time.taken) 
+
+start.time <- Sys.time()
 Lon = cor(A[,1],B[,1])
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+rlon.time[i6] <- as.numeric(time.taken) 
+
+start.time <- Sys.time()
 Lat = cor(A[,2],B[,2])
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+rlat.time[i6] <- as.numeric(time.taken) 
+
+start.time <- Sys.time()
 Lonlat = (Lon+Lat)/2
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+rtot.time[i6] <- as.numeric(time.taken) + rlon.time[i6] + rlat.time[i6]
+
+start.time <- Sys.time()
 Speed = cor(distance1,distance2,use='pairwise.complete.obs')
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+rspeed.time[i6] <- as.numeric(time.taken) + cons.dist.time
+
+start.time <- Sys.time()
 CSEM1 <- CSEM.function(distances=distances,longueur = longueur,delta=1)
-CSEM2 <- CSEM.function(distances=distances,longueur = longueur,delta=2)
-CSEM3 <- CSEM.function(distances=distances,longueur = longueur,delta=3)
-DI <- DI.function(A=A,B=B,delta.DI = delta.DI,longueur = longueur,distance1 = distance1,distance2 = distance2)
-DId <- DI$DI.d
-DItheta <- DI$DI.theta
-DI.stat <- DI$DI
+end.time <- Sys.time()
+time.taken <- difftime(end.time, start.time,units = "secs")
+CSEM.time[i6] <- as.numeric(time.taken) + distances.time + longueur.time
+
+DI <- DI.function.CPU(A=A,B=B,delta.DI = delta.DI,longueur = longueur,distance1 = distance1,distance2 = distance2)
+DId.time[i6] <- DI$DId.time + longueur.time + cons.dist.time
+DItheta.time[i6] <- DI$DItheta.time + longueur.time + cons.dist.time
+DI.time[i6] <- DI$DI.time + longueur.time + cons.dist.time
+
+}
 
 
